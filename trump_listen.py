@@ -18,33 +18,34 @@ class StreamListener(tweepy.StreamListener):
 
     def on_status(self, status):
         print(status.text)
-        tweet_id = status.id
-        date = status.created_at.date()
-        time = status.created_at.time()
-        text = status.text
-        retweets = status.retweet_count
-        favorites = status.favorite_count
-        reply_to = status.in_reply_to_status_id
+        if status.user.id == settings.TRUMP_ID:
+            tweet_id = status.id
+            date = status.created_at.date()
+            time = status.created_at.time().isoformat('seconds')
+            text = status.text
+            retweets = status.retweet_count
+            favorites = status.favorite_count
+            reply_to = status.in_reply_to_status_id
 
-        if status.is_quote_status:
-            quote_status = status.quoted_status_id
-        else:
-            quote_status = None
+            if status.is_quote_status:
+                quote_status = status.quoted_status_id
+            else:
+                quote_status = None
 
-        table = db[settings.TABLE_NAME]
-        try:
-            table.insert_ignore(dict(
-                id=tweet_id,
-                date=date,
-                time=time,
-                text=text,
-                retweets=retweets,
-                favorites=favorites,
-                reply_to=reply_to,
-                quote_status=quote_status
-            ))
-        except ProgrammingError as err:
-            print(err)
+            table = db[settings.TABLE_NAME]
+            try:
+                table.insert(dict(
+                    tweet_id=tweet_id,
+                    date=date,
+                    time=time,
+                    text=text,
+                    retweets=retweets,
+                    favorites=favorites,
+                    reply_to=reply_to,
+                    quote_status=quote_status
+                ))
+            except ProgrammingError as err:
+                print(err)
 
     def on_error(self, status_code):
         if status_code == 420:
