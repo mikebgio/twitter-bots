@@ -11,14 +11,14 @@ auth.set_access_token(settings.ACCESS_TOKEN, settings.ACCESS_SECRET)
 api = tweepy.API(auth)
 print(api)
 
-db = dataset.connect(settings.CONNECTION_STRING)
+db = dataset.connect(settings.TEST_CONNECTION_STRING)
 
 
 class StreamListener(tweepy.StreamListener):
 
     def on_status(self, status):
         print(status.text)
-        if status.user.id == settings.TRUMP_ID:
+        if status.user.id != settings.TRUMP_ID:
             tweet_id = status.id
             date = status.created_at.date()
             time = status.created_at.time().isoformat('seconds')
