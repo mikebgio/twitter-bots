@@ -12,7 +12,9 @@ api = tweepy.API(auth)
 print(api)
 
 db = dataset.connect(settings.CONNECTION_STRING)
-table = db[settings.TRUMP_TABLE_NAME]
+trump_table = db[settings.TRUMP_TABLE_NAME]
+meg_table = db[settings.MEG_TABLE_NAME]
+phrase = "today was the day donald trump finally became president"
 
 
 class StreamListener(tweepy.StreamListener):
@@ -34,7 +36,7 @@ class StreamListener(tweepy.StreamListener):
                 quote_status = None
 
             try:
-                table.insert(dict(
+                trump_table.insert(dict(
                     tweet_id=tweet_id,
                     date=date,
                     time=time,
@@ -48,6 +50,21 @@ class StreamListener(tweepy.StreamListener):
             except ProgrammingError as err:
                 print(err)
                 db.rollback()
+        elif status.user.id == settings.MEG_ID:
+            if phrase == tweet.text.lower():
+                try:
+                    meg_table.insert_ignore(dict(
+                        tweet_id=tweet.id,
+                        date=tweet.created_at.date(),
+                        time=tweet.created_at.time().isoformat('seconds'),
+                        text=tweet.text,
+                        retweets=tweet.retweet_count,
+                        favorites=tweet.favorite_count
+                    ), ['tweet_id'])
+                    db.commit()
+                except ProgrammingError as err:
+                    print(err)
+                    db.rollback()
 
     def on_error(self, status_code):
         if status_code == 420:
@@ -59,4 +76,4 @@ db.begin()
 trumpStreamListener = StreamListener()
 stream = tweepy.Stream(auth=api.auth, listener=trumpStreamListener)
 print('Starting stream...')
-stream.filter(follow=[settings.TRUMP_ID])
+stream.filter(follow=[settings.TRUMP_ID, settings.MEG_ID])

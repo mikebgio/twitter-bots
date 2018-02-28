@@ -10,10 +10,13 @@ auth = tweepy.OAuthHandler(settings.CONSUMER_KEY, settings.CONSUMER_SECRET)
 auth.set_access_token(settings.ACCESS_TOKEN, settings.ACCESS_SECRET)
 api = tweepy.API(auth)
 
+phrase = "today was the day donald trump finally became president"
+
+
 print("Connected: {}".format(api))
 
 db = dataset.connect(settings.CONNECTION_STRING)
-table = db[settings.TRUMP_TABLE_NAME]
+table = db[settings.MEG_TABLE_NAME]
 
 
 def get_last_id():
@@ -21,29 +24,27 @@ def get_last_id():
     return result['tweet_id']
 
 def add_row(tweet):
-    if hasattr(tweet, 'quoted_status_id'):
-        quote_status = tweet.quoted_status_id
-    else:
-        quote_status = None
-
-    try:
-        table.insert_ignore(dict(
-            tweet_id=tweet.id,
-            date=tweet.created_at.date(),
-            time=tweet.created_at.time().isoformat('seconds'),
-            text=tweet.text,
-            retweets=tweet.retweet_count,
-            favorites=tweet.favorite_count,
-            reply_to=tweet.in_reply_to_status_id,
-            quote_status=quote_status
-        ), ['tweet_id'])
-        db.commit()
-    except ProgrammingError as err:
-        print(err)
-        db.rollback()
+    # if hasattr(tweet, 'quoted_status_id'):
+    #     quote_status = tweet.quoted_status_id
+    # else:
+    #     quote_status = None
+    if phrase == tweet.text.lower():
+        try:
+            table.insert_ignore(dict(
+                tweet_id=tweet.id,
+                date=tweet.created_at.date(),
+                time=tweet.created_at.time().isoformat('seconds'),
+                text=tweet.text,
+                retweets=tweet.retweet_count,
+                favorites=tweet.favorite_count
+            ), ['tweet_id'])
+            db.commit()
+        except ProgrammingError as err:
+            print(err)
+            db.rollback()
 
 
-c = tweepy.Cursor(api.user_timeline, id=settings.TRUMP_ID, since_id=get_last_id()).items()
+c = tweepy.Cursor(api.user_timeline, id=settings.MEG_ID).items()
 
 
 def main():
