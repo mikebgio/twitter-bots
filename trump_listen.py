@@ -11,14 +11,15 @@ auth.set_access_token(settings.ACCESS_TOKEN, settings.ACCESS_SECRET)
 api = tweepy.API(auth)
 print(api)
 
-db = dataset.connect(settings.TEST_CONNECTION_STRING)
+db = dataset.connect(settings.CONNECTION_STRING)
+table = db[settings.TRUMP_TABLE_NAME]
 
 
 class StreamListener(tweepy.StreamListener):
 
     def on_status(self, status):
         print(status.text)
-        if status.user.id != settings.TRUMP_ID:
+        if status.user.id == settings.TRUMP_ID:
             tweet_id = status.id
             date = status.created_at.date()
             time = status.created_at.time().isoformat('seconds')
@@ -27,12 +28,11 @@ class StreamListener(tweepy.StreamListener):
             favorites = status.favorite_count
             reply_to = status.in_reply_to_status_id
 
-            if status.is_quote_status:
+            if hasattr(status, 'quoted_status_id'):
                 quote_status = status.quoted_status_id
             else:
                 quote_status = None
 
-            table = db[settings.TABLE_NAME]
             try:
                 table.insert(dict(
                     tweet_id=tweet_id,
@@ -44,8 +44,10 @@ class StreamListener(tweepy.StreamListener):
                     reply_to=reply_to,
                     quote_status=quote_status
                 ))
+                db.commit()
             except ProgrammingError as err:
                 print(err)
+                db.rollback()
 
     def on_error(self, status_code):
         if status_code == 420:
@@ -53,7 +55,7 @@ class StreamListener(tweepy.StreamListener):
             print('oh shit')
             return False
 
-
+db.begin()
 trumpStreamListener = StreamListener()
 stream = tweepy.Stream(auth=api.auth, listener=trumpStreamListener)
 print('Starting stream...')

@@ -17,7 +17,7 @@ table = db[settings.TRUMP_TABLE_NAME]
 
 
 def get_last_id():
-    result = table.find_one(order_by='tweet_id')
+    result = table.find_one(order_by='-tweet_id')
     return result['tweet_id']
 
 def add_row(tweet):
@@ -43,7 +43,7 @@ def add_row(tweet):
         db.rollback()
 
 
-c = tweepy.Cursor(api.user_timeline, id=settings.TRUMP_ID, max_id=get_last_id()).items()
+c = tweepy.Cursor(api.user_timeline, id=settings.TRUMP_ID, since_id=get_last_id()).items()
 
 
 def main():
@@ -53,16 +53,13 @@ def main():
             tweet = c.next()
             print("TweetID: {}\n{}".format(tweet.id, tweet.text))
             add_row(tweet)
-            print("REMAINING: {}".format(api.rate_limit_status()[
-                'resources']['statuses']['/statuses/user_timeline']['remaining']))
+            # print("REMAINING: {}".format(api.rate_limit_status()[
+            #     'resources']['statuses']['/statuses/user_timeline']['remaining']))
         except tweepy.RateLimitError:
-            # print(tweepy.TweepError.message[0]['code'])
             print('RATE LIMITING, PLEASE WAIT 15 Minutes...')
             time.sleep(60 * 15)
             continue
         except StopIteration:
-            print(api.rate_limit_status()['resources']
-                  ['statuses']['/statuses/user_timeline'])
             print("StopIteration")
             break
     db.commit()
