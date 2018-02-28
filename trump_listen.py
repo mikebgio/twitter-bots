@@ -55,4 +55,5 @@ class StreamListener(tweepy.StreamListener):
 
 trumpStreamListener = StreamListener()
 stream = tweepy.Stream(auth=api.auth, listener=trumpStreamListener)
+print('Starting stream...')
 stream.filter(follow=[settings.TRUMP_ID])
