@@ -20,7 +20,7 @@ phrase = "today was the day donald trump finally became president"
 class StreamListener(tweepy.StreamListener):
 
     def on_status(self, status):
-        print(status.text)
+#        print(status.text)
         if status.user.id == settings.TRUMP_ID:
             tweet_id = status.id
             date = status.created_at.date()
@@ -36,7 +36,7 @@ class StreamListener(tweepy.StreamListener):
                 quote_status = None
 
             try:
-                trump_table.insert(dict(
+                trump_table.insert_ignore(dict(
                     tweet_id=tweet_id,
                     date=date,
                     time=time,
@@ -45,7 +45,7 @@ class StreamListener(tweepy.StreamListener):
                     favorites=favorites,
                     reply_to=reply_to,
                     quote_status=quote_status
-                ))
+                ), ['tweet_id'])
                 db.commit()
             except ProgrammingError as err:
                 print(err)
